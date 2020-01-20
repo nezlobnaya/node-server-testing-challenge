@@ -1,5 +1,7 @@
 const Students = require('./studentsModel')
+const request = require('supertest')
 
+const server =require('../server')
 const db = require('../data/db-config')
 
 describe('the Students model', () => {
@@ -24,8 +26,41 @@ describe('the Students model', () => {
     })
 
     describe('the removeStudent function', () => {
-        xit('should remove an entry to the db', async () => {
-
+        it('should remove an entry from the db', async () => {
+            await Students.addStudent({ name: 'Vlad'})
+            await Students.removeStudent(1)
+            const students = await db('students')
+            expect (students).toHaveLength(0)
         })
     })
+
+    it('it should fetch a single student', async () => {
+        await Students.addStudent({ name: 'Vlad'})
+        await Students.addStudent({ name: 'Vasya'})
+        const id = 2
+        const res = await request(server).get(`/api/students/${id}`)
+        expect(res.statusCode).toEqual(200)
+        expect(res.body).toHaveProperty('name')
+    })
+
+    it('should return list of students', () => {
+        return request(server).get('/api/students')
+        .then(res => {
+            expect(res.status).toBe(200)
+            expect(res.type).toBe('application/json')
+            expect(res.body).toEqual([])
+        })
+    })
+
+    it('should update a student', async () => {
+        await Students.addStudent({ name: 'Vlad'})
+        const res = await request(server)
+          .put('/api/students/1')
+          .send({
+            name: 'updated title',
+          });
+        expect(res.statusCode).toEqual(200);
+        expect({ name: 'updated title' });
+      });
+
 })
